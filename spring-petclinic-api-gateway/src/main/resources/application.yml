@@ -46,13 +46,14 @@ spring:
     enabled: false
 
 management:
-  health:
-    probes:
-      enabled: true
   endpoints:
     web:
       exposure:
         include: health, info, prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
   metrics:
     export:
       wavefront:

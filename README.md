@@ -22,10 +22,6 @@ You need a JDK 8+ to build this application:
 $ ./mvnw clean package
 ```
 
-Pre-built container images are available, so that you can start deploying this app to your favorite Kubernetes cluster. In case you'd like to build your own images, please follow these instructions.
-
-To use the pre-built containers set `REPOSITORY_PREFIX=alexandreroman` and go to the [K8S deployment section](#deploying-this-application-to-kubernetes)
-
 [Read this guide](https://buildpacks.io/docs/install-pack/) to deploy the `pack` CLI to your workstation.
 
 Many buildpack implementations are available: for best results, use [Paketo buildpacks](https://paketo.io):
@@ -43,36 +39,6 @@ Set `DOCKER_PREFIX` to your docker hub username
 ```bash
 $ make all DOCKER_PREFIX=myrepo
 ```
-
-## Running this application locally
-
-There is no need to run an Eureka server or anything else: this application is ready to run on your workstation.
-
-Start the gateway:
-
-```bash
-$ java -jar spring-petclinic-api-gateway/target/spring-petclinic-api-gateway-VERSION.jar
-```
-
-Start the `customers` service:
-
-```bash
-java -jar spring-petclinic-customers-service/target/spring-petclinic-customers-service-VERSION.jar
-```
-
-Start the `vets` service:
-
-```bash
-$ java -jar spring-petclinic-vets-service/target/spring-petclinic-vets-service-VERSION.jar
-```
-
-Start the `visits` service:
-
-```bash
-$ java -jar spring-petclinic-visits-service/target/spring-petclinic-visits-service-VERSION.jar
-```
-
-Using your browser, go to http://localhost:8080 to access the application.
 
 ## Deploying this application to Kubernetes
 
@@ -93,7 +59,6 @@ Our deployment YAMLs have a placeholder called `REPOSITORY_PREFIX` so we'll be a
 
 Set `REPOSITORY_PREFIX` to your docker hub username.
 
-OR set to `REPOSITORY_PREFIX=alexandreroman` to use pre-built containers
 
 ```bash
 ./scripts/deployToKubernetes.sh
@@ -126,3 +91,33 @@ Go to http://localhost:8081 to access the application
 Congratulations: you're done!
 
 ![Spring Petclinic Microservices screenshot](docs/application-screenshot.png)
+
+## Running this application locally
+
+There is no need to run an Eureka server or anything else: this application is ready to run on your workstation.
+
+Start the gateway:
+
+```bash
+$ java -jar spring-petclinic-api-gateway/target/spring-petclinic-api-gateway-VERSION.jar
+```
+
+Start the `customers` service:
+
+```bash
+java -jar spring-petclinic-customers-service/target/spring-petclinic-customers-service-VERSION.jar
+```
+
+Start the `vets` service:
+
+```bash
+$ java -jar spring-petclinic-vets-service/target/spring-petclinic-vets-service-VERSION.jar
+```
+
+Start the `visits` service:
+
+```bash
+$ java -jar spring-petclinic-visits-service/target/spring-petclinic-visits-service-VERSION.jar
+```
+
+Using your browser, go to http://localhost:8080 to access the application.
