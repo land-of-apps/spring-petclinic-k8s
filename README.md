@@ -24,6 +24,8 @@ $ ./mvnw clean package
 
 Pre-built container images are available, so that you can start deploying this app to your favorite Kubernetes cluster. In case you'd like to build your own images, please follow these instructions.
 
+To use the pre-built containers set `REPOSITORY_PREFIX=alexandreroman` and go to the [K8S deployment section](#deploying-this-application-to-kubernetes)
+
 [Read this guide](https://buildpacks.io/docs/install-pack/) to deploy the `pack` CLI to your workstation.
 
 Many buildpack implementations are available: for best results, use [Paketo buildpacks](https://paketo.io):
@@ -35,6 +37,8 @@ $ pack set-default-builder gcr.io/paketo-buildpacks/builder:base
 You're ready to build container images with no Dockerfile!
 
 Use the provided `Makefile` to build container images:
+
+Set `DOCKER_PREFIX` to your docker hub username
 
 ```bash
 $ make all DOCKER_PREFIX=myrepo
@@ -70,32 +74,6 @@ $ java -jar spring-petclinic-visits-service/target/spring-petclinic-visits-servi
 
 Using your browser, go to http://localhost:8080 to access the application.
 
-## Enabling Wavefront when running locally
-
-This application includes Wavefront integration.
-Enable profile `wavefront` to get access to a free Wavefront trial, in order to get metrics / traces from the application.
-
-Set the system property `spring.profiles.active=wavefront` to enable `wavefront` profile.
-
-For example:
-
-```bash
-$ java -jar -Dspring.profiles.active=wavefront spring-petclinic-visits-service/target/spring-petclinic-visits-service-VERSION.jar
-```
-
-As the application starts, a link to your application dashboard will be displayed in the console output:
-
-```
-Your existing Wavefront account information has been restored from disk.
-
-To share this account, make sure the following is added to your configuration:
-
-	management.metrics.export.wavefront.api-token=6fe0383b-0338-4664-883e-2642824b968c
-	management.metrics.export.wavefront.uri=https://wavefront.surf
-```
-
-Use this link to get access to metrics / traces.
-
 ## Deploying this application to Kubernetes
 
 This application relies on a MySQL database to persist data: you first need to deploy a MySQL instance.
@@ -104,62 +82,46 @@ Run these commands to create a MySQL database:
 
 ```bash
 $ kubectl create ns spring-petclinic
-$ helm upgrade pdb bitnami/mysql -n spring-petclinic -f k8s/services/mysql/values.yml --version 6.14.4 --install
-```
-
-If you want to enable Wavefront integration, you need to deploy a proxy first. [Follow this guide](https://docs.wavefront.com/kubernetes.html)
-to deploy a Wavefront proxy for Kubernetes.
-
-You may want to reuse this Wavefront proxy configuration:
-
-```bash
-$ kubectl create ns wavefront
-$ helm upgrade wavefront wavefront/wavefront -f k8s/services/wavefront/values.yml --set wavefront.url=https://vmware.wavefront.com --set wavefront.token=wavefront-api-token --set clusterName=k8s-cluster-name -n wavefront --install --version 1.2.6
-```
-
-Make sure you set the Wavefront API token and the Kubernetes cluster name.
-
-Edit file `k8s/wavefront/configmap.yml` and set the Kubernetes cluster name:
-
-```yaml
-data:
-  # Don't forget to reuse the same K8s cluster name used by the Wavefront proxy.
-  WAVEFRONT_APPLICATION_CLUSTER: dev01
-```
-
-Deploy this configuration file to your cluster:
-
-```bash
-$ kubectl apply -f k8s/wavefront
-```
-
-It's time to bind the application to your Wavefront space.
-Create a `Secret` by setting the Wavefront API token:
-
-```bash
-$ kubectl -n spring-petclinic create secret generic app-wavefront --from-literal=MANAGEMENT_METRICS_EXPORT_WAVEFRONT_API-TOKEN=wavefront-api-token
+$ helm upgrade pdb bitnami/mysql -n spring-petclinic -f k8s/services/mysql/values.yml --version 9.1.4 --install
 ```
 
 You're almost there!
 
 Deploy the application to your cluster:
 
+Our deployment YAMLs have a placeholder called `REPOSITORY_PREFIX` so we'll be able to deploy the images from any Docker registry. Sadly, Kubernetes doesn't support environment variables in the YAML descriptors. We have a small script to do it for us and run our deployments:
+
+Set `REPOSITORY_PREFIX` to your docker hub username.
+
+OR set to `REPOSITORY_PREFIX=alexandreroman` to use pre-built containers
+
 ```bash
-$ kubectl apply -f k8s
+./scripts/deployToKubernetes.sh
 ```
 
 The application is not publicly accessible: you need to create a Kubernetes service. Depending on your cluster configuration, you may have to use an `Ingress` route or a `LoadBalancer` to expose your application.
-
-Run this command to use an ingress route (edit file `k8s/ingress/ingress.yml` first to set the route):
-
-```bash
-$ kubectl apply -f k8s/ingress
-```
 
 Run this command to use a Kubernetes managed load balancer:
 ```bash
 $ kubectl apply -f k8s/loadbalancer
 ```
+
+Run `minikube tunnel` to create a tunnel to the application load balancer.
+
+Running the following to see the external IP
+```bash
+kubectl get services -n spring-petclinic 
+NAME                 TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+api-gateway          ClusterIP      10.105.118.131   <none>        8080/TCP       13m
+app-lb               LoadBalancer   10.102.105.180   127.0.0.1     8081:32456/TCP   2m53s
+customers            ClusterIP      10.101.9.241     <none>        8080/TCP       13m
+pdb-mysql            ClusterIP      10.96.197.73     <none>        3306/TCP       9m26s
+pdb-mysql-headless   ClusterIP      None             <none>        3306/TCP       9m26s
+vets                 ClusterIP      10.99.197.155    <none>        8080/TCP       13m
+visits               ClusterIP      10.100.130.182   <none>        8080/TCP       13m
+```
+
+Go to http://localhost:8081 to access the application
 
 Congratulations: you're done!
 
